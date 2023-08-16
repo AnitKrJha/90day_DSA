@@ -1,148 +1,170 @@
 #include <iostream>
 #include <queue>
-#include <vector>
 using namespace std;
 
 struct Node {
   int data;
   Node* left;
   Node* right;
-  Node(int data) {
-    this->data = data;
-    this->left = nullptr;
-    this->right = nullptr;
-  }
+  Node(int data) : data(data), left(nullptr), right(nullptr) {}
 };
-
-/// ---------------------------------------------------------------------------------
 
 class Tree {
  private:
   Node* root;
-  Node* insertToNode(Node* node, int data) {
-    // check if if belongs to the left subtree or the right subtree , and
-    // accordingly call insert again on the corresponding subtree, a tree is
-    // basically a node.
 
-    if (node == nullptr) {
-      return new Node(data);
+  // pointers are basically addresses.
+
+  // -------------------------Insert node----------------------
+
+  void insertToNode(Node** root, int data) {
+    if (*root == nullptr) {
+      *root = new Node(data);
+      return;
     }
-    if (data < node->data) {
-      node->left = insertToNode(node->left, data);
-
+    if (data < (*root)->data) {
+      insertToNode(&(*root)->left, data);
     } else {
-      node->right = insertToNode(node->right, data);
+      insertToNode(&(*root)->right, data);
     }
-    return node;
-
-    // basically what you are saying is bhai if the node is null then make me
-    // the node and return me to the parent.
-    // similary now as the parent node has changed return it to its parent.
-    // ....... finally reaching the root of tree .
   }
 
-  //---- Print Inorder for Tree----------------
+  //-------------------------Inorder Traversal----------------
 
-  void printInorder(Node* root) {
+  void inorderTraversal(Node* root) {
+    if (root == nullptr) {
+      return;
+    }
+    inorderTraversal(root->left);
+    cout << root->data << ' ';
+    inorderTraversal(root->right);
+  }
+
+  //-------------------------Horizontal tree Inorder Traversal-----------------
+  void showHorizontal(Node* root, int spaces) {
     if (root == nullptr) return;
-    printInorder(root->left);
-    cout << root->data << ",";
-    printInorder(root->right);
+    showHorizontal(root->left, spaces + 7);
+    for (int i = 0; i < spaces; i++) cout << " ";
+    cout << "|" << root->data << "|\n";
+    showHorizontal(root->right, spaces + 7);
   }
 
-  //-----Print level order------------------------
+  // -------------------------------Height of a tree-------------------------
 
-  void printLevelOrder() {
-    if (!this->root) return;
+  int heightFromNode(Node* root) {
+    const int EMPTY_TREE_HEIGHT = 0;
+    if (root == nullptr) {
+      return EMPTY_TREE_HEIGHT;
+    }
+    int heightOfLeft = heightFromNode(root->left);
+    int heightOfRight = heightFromNode(root->right);
+    return max(heightOfLeft, heightOfRight) + 1;
+  }
+
+  //-------------------------------Diameter of tree---------------------------
+
+  int diameter(Node* root) {
+    const int EMPTY_TREE_DIAMETER = 0;
+    if (root == nullptr) {
+      return EMPTY_TREE_DIAMETER;
+    }
+    // diameter = max of diameter in left subtree ,right subtree , longest path
+    // passing from this node. longest path passing from this node = height of
+    // left subtree , and height of right subtree +1
+
+    int dLeft = diameter(root->left);
+    int dRight = diameter(root->right);
+    int length = heightFromNode(root->left) + heightFromNode(root->right) + 1;
+    return max(dLeft, max(dRight, length));
+  }
+
+  //-------Diameter without utilizing separate height function------------
+
+  pair<int, int> diameterWithoutHeight(Node* root) {
+    const pair<int, int> EMPTY_TREE_HEIGHT_DIAM = {0, 0};
+    if (root == nullptr) return {0, 0};
+    pair<int, int> leftInfo = diameterWithoutHeight(root->left);
+    pair<int, int> rightInfo = diameterWithoutHeight(root->right);
+
+    int height = max(leftInfo.first, rightInfo.first) + 1;
+    int longestPathThroughRoot = leftInfo.first + rightInfo.first + 1;
+    int diameter =
+        max(longestPathThroughRoot, max(leftInfo.second, rightInfo.second));
+
+    return {height, diameter};
+  }
+
+  //----------------------level order----------------------------------------
+
+  void levelOrder() {
+    if (this->root == nullptr) {
+      cout << "The tree is empty\n";
+      return;
+    }
 
     queue<Node*> q;
-
+    int height = this->height();
     q.push(this->root);
+    int currLevel = 1;
 
     while (!q.empty()) {
       int levelSize = q.size();
-
-      for (int i = 0; i < levelSize; ++i) {
-        Node* current = q.front();
+      cout << "The nodes at level " << currLevel << " are:\n";
+      for (int i = 0; i < levelSize; i++) {
+        Node* top = q.front();
         q.pop();
-        if (current == nullptr) {
-          cout << "-1 ";
-          continue;
-        }
-        cout << current->data << " ";
 
-        if (current->left)
-          q.push(current->left);
+        if (top == nullptr)
+          cout << " -1 ";
         else
-          q.push(nullptr);
-        if (current->right)
-          q.push(current->right);
-        else
-          q.push(nullptr);
+          cout << "|" << top->data << "|  ";
+
+        if (top->left != nullptr) q.push(top->left);
+
+        if (top->right != nullptr) q.push(top->right);
       }
-
-      cout << endl;  // Print a newline after each level
+      cout << "\n\n";
+      currLevel++;
     }
   }
 
-  //------------Horizontal printing----------------------------
-
-  void printLikeaTreeHorizontal(Node* root, int spaces) {
-    if (root == nullptr) {
-      // cout << "-1";
-      return;
-    }
-    printLikeaTreeHorizontal(root->left, spaces + 6);
-    for (int i = 0; i < spaces; i++) cout << " ";
-    cout << "|" << root->data << "|\n";
-    printLikeaTreeHorizontal(root->right, spaces + 6);
-  }
-
-  //============Calculate Height====================================
-
-  int height(Node* root) {
-    if (root == nullptr) {
-      return 0;
-    }
-    return max(height(root->left), height(root->right)) + 1;
-  }
-
-  //==========================Diameter===============================
-
-  int diameter(Node* root) {
-    if (root == nullptr) return 0;
-    int leftSubtreeDiam = diameter(root->left);
-    int rightSubtreeDiam = diameter(root->right);
-    int diameter = height(root->left) + height(root->right) + 1;
-    return max(diameter, max(rightSubtreeDiam, leftSubtreeDiam));
-  }
-
-  //=============public decralation of all functions=================
+  //=============PUBLIC==========================
 
  public:
-  Tree() { this->root = nullptr; }
-  void insertNode(int data) {
-    this->root = this->insertToNode(this->root, data);
+  Tree() : root(nullptr) {}
+  void insert(int data) { this->insertToNode(&this->root, data); }
+  void inorder() { this->inorderTraversal(this->root); }
+  void showHorizontal() {
+    cout << "The horizontal view of this is:\n\n";
+    this->showHorizontal(this->root, 10);
+    cout << "\n\n";
   }
-  void inorder() { this->printInorder(this->root); }
-  void levelOrder() { this->printLevelOrder(); }
-  void printLikeTreeHorizontal() {
-    this->printLikeaTreeHorizontal(this->root, 1);
-  };
-  int height() { return this->height(this->root); }
+  void leveOrder() {
+    cout << "\n\n ------ The LEVEL ORDER -----> \n\n";
+    this->levelOrder();
+    cout << "\n\n";
+  }
+  int height() { return this->heightFromNode(this->root); }
   int diameter() { return this->diameter(this->root); }
+  int diameterWithoutHeight() {
+    return this->diameterWithoutHeight(this->root).second;
+  }
 };
 
 int main() {
   Tree t;
-  vector<int> arr = {35, 2, 235, 2, 6, 2, 6, 7, 1, 34, 11};
-  for (auto& x : arr) {
-    t.insertNode(x);
-  }
-  // t.inorder();
-  cout << '\n';
-  t.levelOrder();
-  t.printLikeTreeHorizontal();
-  cout << "\n" << t.height();
-  cout << "\n" << t.diameter();
+  t.insert(5);
+  t.insert(12);
+  t.insert(2);
+  t.insert(3);
+  t.insert(1);
+  t.insert(7);
+  t.insert(13);
+  t.inorder();
+  cout << "\n";
+  t.showHorizontal();
+  cout << t.diameter() << '\n';
+  cout << t.diameterWithoutHeight() << '\n';
+  t.leveOrder();
+  return 0;
 }
